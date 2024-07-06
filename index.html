@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja" dir="ltr">
+<head>
+    <meta charset="utf-8" />
+    <title>Realtime Sindo</title>
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* スクロールを防止 */
+            width: 100%;
+            height: 100%;
+        }
+        .container {
+            position: relative;
+            width: 352px;
+            height: 400px;
+            margin: 10px; /* 左と上に小さなギャップを追加 */
+        }
+        .fixed-image, .real-time-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .real-time-image {
+            z-index: 1;
+            visibility: hidden; /* 初期状態で非表示にする */
+        }
+        .fixed-image {
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 固定のベースマップ画像 -->
+        <img id="fixedImage" class="fixed-image" src="https://smi.lmoniexp.bosai.go.jp/data/map_img/CommonImg/base_map_b.gif">
+        <!-- リアルタイム地震監視画像 -->
+        <img id="realTimeImage" class="real-time-image" src="placeholder.jpg">
+    </div>
+
+    <script>
+        // 一桁の数字に先行ゼロを付ける関数
+        function pad(number) {
+            return number < 10 ? '0' + number : number;
+        }
+
+        // リアルタイム画像を更新する関数
+        function updateImage() {
+            // 現在の時間を取得し、1.5秒を引く
+            const now = new Date();
+            now.setMilliseconds(now.getMilliseconds() - 1500);
+
+            // 年、月、日、時、分、秒を抽出
+            const year = now.getFullYear();
+            const month = pad(now.getMonth() + 1);
+            const day = pad(now.getDate());
+            const hours = pad(now.getHours());
+            const minutes = pad(now.getMinutes());
+            const seconds = pad(now.getSeconds());
+
+            // サーバーが期待する形式の日付と時間文字列を作成
+            const datePart = `${year}${month}${day}`;
+            const timePart = `${hours}${minutes}${seconds}`;
+
+            // リアルタイム画像のURLを構築
+            const url = `https://smi.lmoniexp.bosai.go.jp/data/map_img/RealTimeImg/jma_s/${datePart}/${datePart}${timePart}.jma_s.gif`;
+
+            // 一時的なImageオブジェクトを使用して画像をプリロード
+            const tempImage = new Image();
+            tempImage.onload = function() {
+                const realTimeImage = document.getElementById('realTimeImage');
+                realTimeImage.src = url;
+                realTimeImage.style.visibility = 'visible'; // 画像が正常にロードされたら表示する
+            };
+            tempImage.onerror = function() {
+                console.error(`画像の読み込みに失敗しました: ${url}`);
+                // プレースホルダー画像ではなく、固定のベースマップ画像を表示する
+                const realTimeImage = document.getElementById('realTimeImage');
+                realTimeImage.src = document.getElementById('fixedImage').src;
+                realTimeImage.style.visibility = 'visible'; // 表示する
+            };
+            tempImage.src = url;
+        }
+
+        // 初回実行
+        updateImage();
+
+        // 0.5秒ごとにupdateImageを実行
+        setInterval(updateImage, 500);
+    </script>
+</body>
+</html>
